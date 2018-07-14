@@ -175,6 +175,9 @@ UpgradeLog*.htm
 # SQL Server files
 *.mdf
 *.ldf
+*.dtbcache
+*.ide-shm
+*.ide-wal
 
 # Business Intelligence projects
 *.rdl.data
@@ -190,3 +193,4 @@ git_stats/*
 StyleCop.Cache
 bin
 obj
+
