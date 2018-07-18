@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Multiplayer_Checkers.Properties {
+namespace GameClient.Properties {
 
 
   /// <summary>
@@ -38,7 +38,7 @@ namespace Multiplayer_Checkers.Properties {
     internal static global::System.Resources.ResourceManager ResourceManager {
       get {
         if ((resourceMan == null)) {
-          global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Multiplayer_Checkers.Properties.Resources", typeof(Resources).Assembly);
+          global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("GameClient.Properties.Resources", typeof(Resources).Assembly);
           resourceMan = temp;
         }
         return resourceMan;

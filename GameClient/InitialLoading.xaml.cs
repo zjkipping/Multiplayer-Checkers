@@ -13,13 +13,14 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace Multiplayer_Checkers {
-  /// <summary>
-  /// Interaction logic for MainWindow.xaml
-  /// </summary>
-  public partial class MainWindow : Window {
-    public MainWindow() {
+namespace GameClient {
+  public partial class InitialLoading: UserControl {
+    public InitialLoading() {
       InitializeComponent();
+    }
+
+    private void ChangeScreens_Click(object sender, RoutedEventArgs e) {
+      ViewController.SetView(View.MainMenu);
     }
   }
 }
