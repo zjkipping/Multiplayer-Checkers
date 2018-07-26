@@ -131,7 +131,7 @@ namespace MiddleManServer {
     }
 
     private void Pinging() {
-      while(PingingThreadRunning && LastPing.AddMilliseconds(PingRate) > DateTime.Now) {
+      while (PingingThreadRunning && LastPing.AddMilliseconds(PingRate) > DateTime.Now) {
         PingThread = new Thread(() => {
           Thread.Sleep(PingWait);
           if (PingingClient) {

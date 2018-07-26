@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
-namespace MiddleManServer
-{
+namespace MiddleManServer {
   public enum ClientType {
     User,
     Host
@@ -16,7 +17,7 @@ namespace MiddleManServer
 
   public delegate void ClientDisconnectEventHandler(Client sender, ClientDisconnectEventArgs e);
 
-  public class ClientDisconnectEventArgs: EventArgs {
+  public class ClientDisconnectEventArgs : EventArgs {
     public ClientDisconnectReason reason;
     public ClientDisconnectEventArgs(ClientDisconnectReason value) {
       reason = value;
@@ -31,7 +32,7 @@ namespace MiddleManServer
 
   public delegate void LobbyCloseEventHandler(Lobby sender, LobbyCloseEventArgs e);
 
-  public class LobbyCloseEventArgs: EventArgs {
+  public class LobbyCloseEventArgs : EventArgs {
     public LobbyCloseReason reason;
     public LobbyCloseEventArgs(LobbyCloseReason value) {
       reason = value;

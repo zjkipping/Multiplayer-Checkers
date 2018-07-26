@@ -17,7 +17,7 @@ namespace MiddleManServer {
 
     public const int Port = 5000;
     public static EndPoint IP;
-    
+
     public static bool Start() {
       try {
         socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
@@ -28,7 +28,7 @@ namespace MiddleManServer {
         AcceptClientsThread = new Thread(() => AcceptClients());
         AcceptingClients = true;
         AcceptClientsThread.Start();
-        
+
         return true;
       } catch {
         return false;

@@ -67,6 +67,8 @@
     <Compile Include="MainMenu.xaml.cs">
       <DependentUpon>MainMenu.xaml</DependentUpon>
     </Compile>
+    <Compile Include="MiddleManAPI.cs" />
+    <Compile Include="MiddleManResponse.cs" />
     <Compile Include="Types.cs" />
     <Compile Include="ViewController.cs" />
   </ItemGroup>

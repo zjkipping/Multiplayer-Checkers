@@ -17,6 +17,8 @@ namespace GameClient {
   public partial class InitialLoading: UserControl {
     public InitialLoading() {
       InitializeComponent();
+
+      MiddleManAPI.Connect();
     }
 
     private void ChangeScreens_Click(object sender, RoutedEventArgs e) {
