@@ -11,7 +11,7 @@ namespace GameClient {
   public static class MiddleManAPI {
     private static Socket socket = null;
     private static IPEndPoint IP = new IPEndPoint(IPAddress.Parse("18.212.35.145"), 5000); // IP/Port for the middleman server
-    private static int HostPort = 4321; // port used when hosting a lobby
+    private static int HostPort = 12345; // port used when hosting a lobby
     private static Thread ResponseThread = null;
     private static bool ResponseThreadRunning = false;
 
@@ -69,7 +69,9 @@ namespace GameClient {
     }
 
     private static int getUsablePort() {
-      while (PortInUse(HostPort++));
+      while (PortInUse(HostPort)) {
+        HostPort++;
+      }
       return HostPort;
     }
 
@@ -158,7 +160,9 @@ namespace GameClient {
           }
           client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
           client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-          client.Bind(new IPEndPoint(IPAddress.Any, HostPort));
+          IPEndPoint mine = new IPEndPoint(IPAddress.Any, HostPort);
+          client.Bind(mine);
+          Console.WriteLine("Mine: " + mine + "   Peer:   " + peer);
           client.Connect(peer);
           connected = true;
         } catch (Exception e) {
