@@ -13,9 +13,9 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace GameClient {
-  public partial class MainMenu: UserControl {
-    public MainMenu() {
+namespace GameClient.Views {
+  public partial class LobbyView : UserControl {
+    public LobbyView(BaseLobby lobby) {
       InitializeComponent();
     }
   }

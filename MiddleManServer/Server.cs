@@ -7,7 +7,7 @@ using System.Net.Sockets;
 namespace MiddleManServer {
   public static class Server {
     private static Socket socket;
-    private static int lobby_counter = 0;
+    private static int lobby_counter = 1;
 
     private static List<Client> Clients = new List<Client>();
     private static List<Lobby> Lobbies = new List<Lobby>();
@@ -43,7 +43,6 @@ namespace MiddleManServer {
         client.Start();
         client.ClientDisconnected += HandleClientDisconnect;
 
-        Console.WriteLine("Got new client!");
         Console.WriteLine("Client Count: {0}", Clients.Count);
       }
     }
@@ -52,8 +51,9 @@ namespace MiddleManServer {
       Console.WriteLine("Getting Lobby List");
       string message = "LOBBY_LIST|";
       foreach (Lobby lobby in Lobbies) {
-        message += lobby.ID + "-" + lobby.Host.Name + "-" + lobby.Status + "-" + lobby.PlayerCount + ",";
+        message += lobby.ID + "-" + lobby.Host.Name + "-" + (int)lobby.Status + "-" + lobby.PlayerCount + ",";
       }
+      Console.WriteLine(message);
       client.SendMessage(message);
     }
 
@@ -61,6 +61,8 @@ namespace MiddleManServer {
       Lobby new_lobby = new Lobby(client, lobby_counter++, name);
       new_lobby.LobbyClosed += HandleLobbyClose;
       Lobbies.Add(new_lobby);
+      client.SetType(ClientType.Host);
+      client.SendMessage("HOSTING|");
       Console.WriteLine("{0} is now hosting lobby with the id: {1}", client.IP, new_lobby.ID);
     }
 

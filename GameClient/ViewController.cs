@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace GameClient {
@@ -12,20 +13,13 @@ namespace GameClient {
   }
 
   public static class ViewController {
-    public static View CurrentView;
-
     public static event ViewChangeHandler ViewChanged;
 
-    public static void SetView(View view) {
-      switch (view) {
-        case View.InitialLoading:
-          CurrentView = view;
-          ViewChanged?.Invoke(new ViewChangeEventArgs(new InitialLoading()));
-          break;
-        case View.MainMenu:
-          CurrentView = view;
-          ViewChanged?.Invoke(new ViewChangeEventArgs(new MainMenu()));
-          break;
+    public static void SetView(UserControl view) {
+      if (view != null) {
+        Application.Current.Dispatcher.Invoke(delegate {
+          ViewChanged?.Invoke(new ViewChangeEventArgs(view));
+        });
       }
     }
   }

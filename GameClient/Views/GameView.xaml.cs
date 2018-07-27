@@ -13,16 +13,13 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace GameClient {
-  public partial class InitialLoading: UserControl {
-    public InitialLoading() {
+namespace GameClient.Views {
+  /// <summary>
+  /// Interaction logic for GameView.xaml
+  /// </summary>
+  public partial class GameView : UserControl {
+    public GameView() {
       InitializeComponent();
-
-      MiddleManAPI.Connect();
-    }
-
-    private void ChangeScreens_Click(object sender, RoutedEventArgs e) {
-      ViewController.SetView(View.MainMenu);
     }
   }
 }

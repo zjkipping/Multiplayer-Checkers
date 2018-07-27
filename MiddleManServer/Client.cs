@@ -42,14 +42,21 @@ namespace MiddleManServer {
       Type = ClientType.User;
       ListenThread = new Thread(Listen);
       PingThread = new Thread(Pinging);
+
+      Console.WriteLine("Client Connected:    " + Connection.RemoteEndPoint + "    -    " + Connection.LocalEndPoint);
     }
 
     public void SetName(string value) {
       Name = value;
     }
 
+    public void SetType(ClientType value) {
+      Type = value;
+    }
+
     public void Start() {
       if (Connection != null) {
+        SendMessage("CONNECTED|");
         Listening = true;
         ListenThread.Start();
       }
@@ -89,6 +96,8 @@ namespace MiddleManServer {
             HandlePongResponse();
           } else if (responseType == "DISCONNECT") {
             Disconnect(ClientDisconnectReason.Clean);
+          } else if (responseType == "REQ_LOBBIES") {
+            Server.GetLobbyList(this);
           } else if (Type == ClientType.Host) {
             switch (responseType) {
               case "CLOSE_LOBBY":
@@ -101,9 +110,6 @@ namespace MiddleManServer {
             }
           } else if (Type == ClientType.User) {
             switch (responseType) {
-              case "REQ_LOBBIES":
-                Server.GetLobbyList(this);
-                break;
               case "HOST":
                 Server.HostLobby(this, sections[1]);
                 break;

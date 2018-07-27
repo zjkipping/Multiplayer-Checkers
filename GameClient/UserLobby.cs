@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Net.Sockets;
 
 namespace GameClient {
-  public class MiddleManResponse {
-
-    public MiddleManResponse() {
+  class UserLobby: BaseLobby {
+    public UserLobby(Socket connection) : base(LobbyType.User) {
 
     }
   }

@@ -5,43 +5,85 @@ using System.Text;
 using System.Threading;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.NetworkInformation;
 
 namespace GameClient {
-  public delegate void ResponseParsedHandler(ResponseParsedEventArgs args);
-
-  public class ResponseParsedEventArgs : EventArgs {
-    public MiddleManResponse response;
-    public ResponseParsedEventArgs(MiddleManResponse value) {
-      response = value;
-    }
-  }
-
   public static class MiddleManAPI {
-    private static Socket socket;
+    private static Socket socket = null;
     private static IPEndPoint IP = new IPEndPoint(IPAddress.Parse("18.212.35.145"), 5000); // IP/Port for the middleman server
-    private const int HostPort = 4321; // port used when hosting a lobby
+    private static int HostPort = 4321; // port used when hosting a lobby
     private static Thread ResponseThread = null;
     private static bool ResponseThreadRunning = false;
 
-    public static bool Connected { get { return socket.Connected; } }
+    public delegate void ConnectedSuccessEventHandler();
+    public static event ConnectedSuccessEventHandler ConnectedSuccess;
 
-    public static event ResponseParsedHandler ResponseParsed;
+    public delegate void NewLobbyListEventHandler(List<LobbyListItem> list);
+    public static event NewLobbyListEventHandler NewLobbyList;
+
+    public delegate void LobbyCreatedEventHandler();
+    public static event LobbyCreatedEventHandler LobbyCreated;
+
+    public delegate void JoinLobbySuccessEventHandler(Socket connection);
+    public static event JoinLobbySuccessEventHandler JoinLobbySuccess;
+
+    public delegate void JoinLobbyFailureEventHandler();
+    public static event JoinLobbyFailureEventHandler JoinLobbyFailure;
+
+    public delegate void UserConnectedEventHandler(Socket connection);
+    public static event UserConnectedEventHandler UserConnected;
 
     public static bool Connect() {
-      try {
-        socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-        socket.Bind(new IPEndPoint(IPAddress.Any, HostPort));
-        socket.Connect(IP);
-      } catch {
+      if (socket == null) {
+        try {
+          socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+          socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+          socket.Bind(new IPEndPoint(IPAddress.Any, getUsablePort()));
+          socket.Connect(IP);
+        } catch {
+          socket = null;
+          return false;
+        }
+
+        ResponseThread = new Thread(Responses);
+        ResponseThreadRunning = true;
+        ResponseThread.Start();
+
+        return true;
+      } else {
         return false;
       }
+    }
 
-      ResponseThread = new Thread(Responses);
-      ResponseThreadRunning = true;
-      ResponseThread.Start();
+    public static void RequestLobbyList() {
+      SendMessage("REQ_LOBBIES|");
+    }
 
-      return true;
+    public static void HostLobby() {
+      SendMessage("HOST|");
+    }
+
+    public static void JoinLobby(int id) {
+      SendMessage("CONNECT|" + id);
+    }
+
+    private static int getUsablePort() {
+      while (PortInUse(HostPort++));
+      return HostPort;
+    }
+
+    private static bool PortInUse(int port) {
+      bool inUse = false;
+      IPGlobalProperties ipProperties = IPGlobalProperties.GetIPGlobalProperties();
+      IPEndPoint[] ipEndPoints = ipProperties.GetActiveTcpListeners();
+      foreach (IPEndPoint endPoint in ipEndPoints) {
+        if (endPoint.Port == port) {
+          inUse = true;
+          break;
+        }
+      }
+      return inUse;
     }
 
     private static void Responses() {
@@ -52,6 +94,32 @@ namespace GameClient {
           string[] sections = response.Split('|');
           string responseType = sections[0];
           string parameters = sections[1].Replace("\r", "").Replace("\n", "");
+
+          switch (responseType) {
+            case "CONNECTED":
+              ConnectedSuccess?.Invoke();
+              break;
+            case "LOBBY_LIST":
+              string[] lobbies = parameters.Split(',');
+              List<LobbyListItem> lobbyList = new List<LobbyListItem>();
+              foreach(string lobby in lobbies) {
+                string[] info = lobby.Split('-');
+                if (int.TryParse(info[0], out int id) && int.TryParse(info[2], out int status) && int.TryParse(info[3], out int player_count)) {
+                  lobbyList.Add(new LobbyListItem(id, info[1], (LobbyStatus)status, player_count));
+                }
+              }
+              NewLobbyList?.Invoke(lobbyList);
+              break;
+            case "HOSTING":
+              LobbyCreated?.Invoke();
+              break;
+            case "PUNCH-HOST":
+              Socket connectionToC = PerformPunchThrough(sections[1].Split(':'));
+              break;
+            case "PUNCH-CLIENT":
+              Socket connectionToH = PerformPunchThrough(sections[1].Split(':'));
+              break;
+          }
 
           Console.WriteLine(responseType + " | " + parameters);
         } else {
@@ -68,6 +136,40 @@ namespace GameClient {
         return Encoding.ASCII.GetString(buffer, 0, socket.Receive(buffer));
       } catch {
         return "";
+      }
+    }
+
+    private static void SendMessage(string message) {
+      try {
+        socket.Send(Encoding.ASCII.GetBytes(message + "\r\n"));
+      } catch (SocketException) {
+        // disconnected from middle man server, do something
+      }
+    }
+
+    private static Socket PerformPunchThrough(string[] peerInfo) {
+      IPEndPoint peer = new IPEndPoint(IPAddress.Parse(peerInfo[0]), int.Parse(peerInfo[1]));
+      Socket client = null;
+      bool connected = false;
+      while (!connected) {
+        try {
+          if (client != null) {
+            client.Close();
+          }
+          client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+          client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+          client.Bind(new IPEndPoint(IPAddress.Any, HostPort));
+          client.Connect(peer);
+          connected = true;
+        } catch (Exception e) {
+          Console.WriteLine(e);
+        }
+      }
+
+      if (connected) {
+        return client;
+      } else {
+        return null;
       }
     }
   }

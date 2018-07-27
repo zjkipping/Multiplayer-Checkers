@@ -61,16 +61,26 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="InitialLoading.xaml.cs">
-      <DependentUpon>InitialLoading.xaml</DependentUpon>
+    <Compile Include="HostLobby.cs" />
+    <Compile Include="UserLobby.cs" />
+    <Compile Include="Views\GameView.xaml.cs">
+      <DependentUpon>GameView.xaml</DependentUpon>
     </Compile>
-    <Compile Include="MainMenu.xaml.cs">
-      <DependentUpon>MainMenu.xaml</DependentUpon>
+    <Compile Include="Views\InitialLoadingView.xaml.cs">
+      <DependentUpon>InitialLoadingView.xaml</DependentUpon>
     </Compile>
     <Compile Include="MiddleManAPI.cs" />
-    <Compile Include="MiddleManResponse.cs" />
     <Compile Include="Types.cs" />
     <Compile Include="ViewController.cs" />
+    <Compile Include="Views\LoadingLobbyView.xaml.cs">
+      <DependentUpon>LoadingLobbyView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\LobbyListView.xaml.cs">
+      <DependentUpon>LobbyListView.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Views\LobbyView.xaml.cs">
+      <DependentUpon>LobbyView.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MainWindow.xaml.cs">
@@ -102,15 +112,27 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Page Include="InitialLoading.xaml">
+    <Page Include="Views\GameView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="MainMenu.xaml">
+    <Page Include="Views\InitialLoadingView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="MainWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\LoadingLobbyView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\LobbyListView.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Views\LobbyView.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
