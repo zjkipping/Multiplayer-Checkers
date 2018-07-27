@@ -69,7 +69,11 @@ namespace MiddleManServer {
     public static void JoinLobby(Client client, int id) {
       Lobby lobby = Lobbies.Find((Lobby l) => l.ID == id);
       if (lobby != null) {
-        lobby.Connect(client);
+        if (lobby.PlayerCount < 2) {
+          lobby.Connect(client);
+        } else {
+          client.SendMessage("ERROR|Lobby Is Full");
+        }
       } else {
         client.SendMessage("ERROR|Lobby Doesn't Exist");
       }

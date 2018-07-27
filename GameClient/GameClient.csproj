@@ -61,7 +61,11 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="BaseLobby.cs" />
+    <Compile Include="Board.cs" />
+    <Compile Include="Game.cs" />
     <Compile Include="HostLobby.cs" />
+    <Compile Include="User.cs" />
     <Compile Include="UserLobby.cs" />
     <Compile Include="Views\GameView.xaml.cs">
       <DependentUpon>GameView.xaml</DependentUpon>

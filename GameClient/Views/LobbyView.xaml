@@ -7,8 +7,12 @@
              mc:Ignorable="d" 
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <TextBlock FontSize="20" Margin="10" VerticalAlignment="Center" HorizontalAlignment="Center">
+        <TextBlock FontSize="20" Margin="10, 0, 0, 0">
             Lobby View
         </TextBlock>
+        <Button Name="StartButton" IsEnabled="false" Visibility="Hidden" Height="40" Width="200" Margin="10, 10, 10, 10"  HorizontalAlignment="Center" VerticalAlignment="Center" Click="StartButton_Click">Start Game</Button>
+        <TextBox Name="MessageText" Width="200" Height="80" Margin="10, 10, 10, 52.5" HorizontalAlignment="Right" VerticalAlignment="Bottom"/>
+        <Button Height="40" Width="200"  Name="ChatButton" Margin="10, 10, 10, 10" Click="ChatButton_Click" HorizontalAlignment="Right" VerticalAlignment="Bottom">Send Message</Button>
+        <ListBox Width="200" Margin="10, 10, 10, 135" Name="ChatListBox" HorizontalAlignment="Right" />
     </Grid>
 </UserControl>

@@ -11,7 +11,7 @@ namespace GameClient {
   public static class MiddleManAPI {
     private static Socket socket = null;
     private static IPEndPoint IP = new IPEndPoint(IPAddress.Parse("18.212.35.145"), 5000); // IP/Port for the middleman server
-    private static int HostPort = 12345; // port used when hosting a lobby
+    private static int HostPort = 12344; // port used when hosting a lobby
     private static Thread ResponseThread = null;
     private static bool ResponseThreadRunning = false;
 
@@ -69,9 +69,9 @@ namespace GameClient {
     }
 
     private static int getUsablePort() {
-      while (PortInUse(HostPort)) {
-        HostPort++;
-      }
+      Console.WriteLine("Testing Port: " + HostPort);
+      while (PortInUse(HostPort++)) { }
+      Console.WriteLine("Found Port: " + HostPort);
       return HostPort;
     }
 
@@ -97,8 +97,11 @@ namespace GameClient {
           string responseType = sections[0];
           string parameters = sections[1].Replace("\r", "").Replace("\n", "");
 
+          Console.WriteLine(responseType + " | " + parameters);
+
           switch (responseType) {
             case "CONNECTED":
+              User.Name = parameters;
               ConnectedSuccess?.Invoke();
               break;
             case "LOBBY_LIST":
@@ -117,13 +120,20 @@ namespace GameClient {
               break;
             case "PUNCH-HOST":
               Socket connectionToC = PerformPunchThrough(sections[1].Split(':'));
+              if (connectionToC != null) {
+                UserConnected?.Invoke(connectionToC);
+              }
               break;
             case "PUNCH-CLIENT":
               Socket connectionToH = PerformPunchThrough(sections[1].Split(':'));
+              if (connectionToH != null) {
+                JoinLobbySuccess?.Invoke(connectionToH);
+              } else {
+                JoinLobbyFailure.Invoke();
+              }
               break;
           }
 
-          Console.WriteLine(responseType + " | " + parameters);
         } else {
           // raise disconnect events
           Console.WriteLine("Server Connection Failed...");
@@ -153,7 +163,8 @@ namespace GameClient {
       IPEndPoint peer = new IPEndPoint(IPAddress.Parse(peerInfo[0]), int.Parse(peerInfo[1]));
       Socket client = null;
       bool connected = false;
-      while (!connected) {
+      int attempts = 0;
+      while (!connected && attempts <= 25) {
         try {
           if (client != null) {
             client.Close();
@@ -168,6 +179,7 @@ namespace GameClient {
         } catch (Exception e) {
           Console.WriteLine(e);
         }
+        attempts++;
       }
 
       if (connected) {

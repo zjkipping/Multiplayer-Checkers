@@ -14,12 +14,21 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace GameClient.Views {
-  /// <summary>
-  /// Interaction logic for GameView.xaml
-  /// </summary>
   public partial class GameView : UserControl {
-    public GameView() {
+    BaseLobby Lobby = null;
+    Board board = null;
+    public GameView(BaseLobby lobby) {
       InitializeComponent();
+
+      Lobby = lobby;
+
+      Lobby.ChatMessages.ForEach(delegate (string message) {
+        ChatBox.Items.Add(message);
+      });
+    }
+
+    private void CanvasBoard_Loaded(object sender, RoutedEventArgs e) {
+      board = new Board(CanvasBoard);
     }
   }
 }

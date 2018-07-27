@@ -37,7 +37,7 @@ namespace MiddleManServer {
     }
 
     public Client(Socket connection) {
-      Name = "Guest #" + Server.GetClientCount();
+      Name = "Guest#" + (Server.GetClientCount() + 1).ToString();
       Connection = connection;
       Type = ClientType.User;
       ListenThread = new Thread(Listen);
@@ -56,7 +56,7 @@ namespace MiddleManServer {
 
     public void Start() {
       if (Connection != null) {
-        SendMessage("CONNECTED|");
+        SendMessage("CONNECTED|"+Name);
         Listening = true;
         ListenThread.Start();
       }

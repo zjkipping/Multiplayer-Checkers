@@ -13,14 +13,6 @@
     GameScreen
   }
 
-  public class BaseLobby {
-    LobbyType Type;
-
-    public BaseLobby(LobbyType type) {
-      Type = type;
-    }
-  }
-
   public class LobbyListItem {
     private int id;
     public string ID {
