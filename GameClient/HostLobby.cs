@@ -52,7 +52,7 @@ namespace GameClient {
     }
 
     public void SelectTile(Point position) {
-      MoveOption option = game.SelectTile(position);
+      (bool kinged, MoveOption option) = game.SelectTile(position);
       if (option != null) {
         TileSelect(option);
         string optionsString = "";
@@ -123,7 +123,7 @@ namespace GameClient {
           break;
         case "TILE":
           try {
-            MoveOption option = game.SelectTile(Point.Parse(parameters));
+            (bool kinged, MoveOption option) = game.SelectTile(Point.Parse(parameters));
             if (option != null) {
               TileSelect(option);
               string optionsString = "";

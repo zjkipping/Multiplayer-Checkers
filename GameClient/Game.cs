@@ -69,7 +69,7 @@ namespace GameClient {
       }
     }
 
-    public MoveOption SelectTile(Point position) {
+    public (bool, MoveOption) SelectTile(Point position) {
       Console.WriteLine("Selected Tile: " + position.ToString());
       MoveOption option = currentOptions.Find(o => o.Spot.Equals(position));
       if (option != null) {
@@ -79,14 +79,14 @@ namespace GameClient {
             pieces.RemoveAll(p => p.Position.Equals(hoppedPoint));
           });
           selectedPiece = null;
-          return option;
+          return (false, option);
         } else {
           // no piece in that spot (probably will never happen)
-          return null;
+          return (false, null);
         }
       } else {
         // invalid tile
-        return null;
+        return (false, null);
       }
     }
 
