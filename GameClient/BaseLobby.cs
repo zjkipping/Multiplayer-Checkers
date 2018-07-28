@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Windows;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,8 +13,20 @@ namespace GameClient {
     public LobbyType Type;
     public Thread ListenThread = null;
     public Socket connection;
-    public List<string> ChatMessages = new List<string>();
+    public ObservableCollection<string> ChatMessages = new ObservableCollection<string>();
     public bool ListeningToConnection = false;
+
+    public string Player1 = "Host";
+    public string Player2 = "User";
+
+    public delegate void PieceSelectedEventHandler(Point piece, List<MoveOption> options);
+    public event PieceSelectedEventHandler PieceSelected;
+
+    public delegate void TileSelectedEventHandler(MoveOption option);
+    public event TileSelectedEventHandler TileSelected;
+
+    public delegate void NextTurnEventHandler(PlayerType player, List<GamePiece> forcedPieces);
+    public event NextTurnEventHandler NextTurn;
 
     public delegate void NewResponseEventHandler(string type, string parameters);
     public event NewResponseEventHandler NewResponse;
@@ -20,23 +34,34 @@ namespace GameClient {
     public delegate void PeerDisconnectedEventHandler();
     public event PeerDisconnectedEventHandler PeerDisconnected;
 
-    public delegate void NewMessageEventHandler(string message, string user);
-    public event NewMessageEventHandler NewMessage;
-
     public BaseLobby(LobbyType type) {
       Type = type;
     }
 
     public void GotNewMessage(string message, string user = "") {
-      ChatMessages.Add((user != "" ? user + ": " : "") + message);
-      NewMessage?.Invoke(message, user);
+      Application.Current.Dispatcher?.Invoke(() => ChatMessages.Add((user != "" ? user + ": " : "") + message));
+    }
+
+    public void StartNextTurn(PlayerType player, List<GamePiece> forcedPieces) {
+      NextTurn?.Invoke(player, forcedPieces);
+    }
+
+    public void PieceSelect(Point piece, List<MoveOption> options) {
+      PieceSelected?.Invoke(piece, options);
+    }
+
+    public void TileSelect(MoveOption option) {
+      TileSelected?.Invoke(option);
     }
 
     public void SendMessage(string message) {
-      try {
-        connection.Send(Encoding.ASCII.GetBytes(message + "\r\n"));
-      } catch (SocketException) {
-        PeerDisconnected?.Invoke();
+      if (connection != null) {
+        try {
+          connection.Send(Encoding.ASCII.GetBytes(message + "\r\n"));
+          Console.WriteLine("SENT MESSAGE:   " + message);
+        } catch (SocketException) {
+          PeerDisconnected?.Invoke();
+        }
       }
     }
 

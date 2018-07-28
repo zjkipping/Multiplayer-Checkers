@@ -7,5 +7,6 @@ using System.Threading.Tasks;
 namespace GameClient {
   public static class User {
     public static string Name = "";
+    public static PlayerType Type;
   }
 }

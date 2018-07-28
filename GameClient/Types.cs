@@ -1,4 +1,17 @@
-﻿namespace GameClient {
+﻿using System.Windows;
+using System.Collections.Generic;
+
+namespace GameClient {
+  public enum PlayerType {
+    Player1,
+    Player2
+  }
+
+  public enum PieceType {
+    Normal,
+    King
+  }
+
   public enum LobbyType {
     User,
     Host
@@ -11,6 +24,28 @@
     LobbyLoading,
     LobbyScreen,
     GameScreen
+  }
+
+  public class GamePiece {
+    public Point Position;
+    public PieceType Type;
+    public PlayerType Owner;
+
+    public GamePiece(Point position, PlayerType owner, PieceType type = PieceType.Normal) {
+      Position = position;
+      Owner = owner;
+      Type = type;
+    }
+  }
+
+  public class MoveOption {
+    public Point Spot;
+    public List<Point> HoppedPieces;
+
+    public MoveOption(Point spot, List<Point> hoppedPieces) {
+      Spot = spot;
+      HoppedPieces = hoppedPieces;
+    }
   }
 
   public class LobbyListItem {

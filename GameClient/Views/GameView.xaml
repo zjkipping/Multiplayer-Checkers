@@ -5,9 +5,18 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:GameClient.Views"
              mc:Ignorable="d" 
-             d:DesignHeight="450" d:DesignWidth="800">
+             d:DesignHeight="620" d:DesignWidth="820">
     <Grid>
-        <ListBox Margin="0, 10, 0, 10" Name="ChatBox" HorizontalAlignment="Left" Width="200"></ListBox>
+        <TextBlock FontSize="15" TextWrapping="Wrap" Margin="10, 0, 0, 0" Name="CurrentPlayerText" VerticalAlignment="Top" HorizontalAlignment="Left" Height="30" Width="180">Current Player: </TextBlock>
+        <ListBox ScrollViewer.HorizontalScrollBarVisibility="Disabled" Margin="0, 100, 0, 165" Name="ChatBox" HorizontalAlignment="Left" Width="200" Background="#FF515151" Foreground="White">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <TextBlock Text="{Binding}" TextWrapping="Wrap"/>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBox TextWrapping="Wrap"  Margin="0, 0, 0, 55" Name="MessageBox" VerticalAlignment="Bottom" HorizontalAlignment="Left" Height="100" Width="200" Background="White" Foreground="Black"></TextBox>
+        <Button Margin="25, 10, 10, 10" Name="ChatButton" VerticalAlignment="Bottom" HorizontalAlignment="Left" Height="40" Width="150" Click="ChatButton_Click">Send Message</Button>
         <Canvas Loaded="CanvasBoard_Loaded" Name="CanvasBoard" Margin="210, 10, 10,10" Background="#FF4D4D4D"/>
     </Grid>
 </UserControl>

@@ -15,10 +15,192 @@ using System.Windows.Shapes;
 
 namespace GameClient {
   public class Board {
-    Canvas canvas = null;
+    private Canvas canvas = null;
+    private List<Tile> Tiles = new List<Tile>();
+    private List<Piece> Pieces = new List<Piece>();
+    private LobbyType lobbyType;
+    private SolidColorBrush WhiteBrush = new SolidColorBrush { Color = Color.FromRgb(255, 255, 255) };
+    private SolidColorBrush BlueBrush = new SolidColorBrush { Color = Color.FromRgb(0, 0, 255) };
+    private SolidColorBrush GreenBrush = new SolidColorBrush { Color = Color.FromRgb(0, 255, 0) };
+    private SolidColorBrush PurpleBrush = new SolidColorBrush { Color = Color.FromRgb(128, 0, 128) };
+    private SolidColorBrush YellowBrush = new SolidColorBrush { Color = Color.FromRgb(255, 255, 0) };
 
-    public Board(Canvas canvas) {
+    public delegate void TileClickEventHandler(Point position);
+    public event TileClickEventHandler TileClick;
+
+    public delegate void PieceClickEventHandler(Point position);
+    public event PieceClickEventHandler PieceClick;
+
+    public delegate void TileHoverChangeEventHandler(Point spot, bool hovering);
+    public event TileHoverChangeEventHandler TileHoverChange;
+
+    public Board(Canvas canvas, LobbyType lobbyType) {
+      this.lobbyType = lobbyType;
       this.canvas = canvas;
+
+      // creating the tile objects
+      for (int x = 0; x < 8; x++) {
+        for (int y = 0; y < 8; y++) {
+          Tile new_tile = new Tile(new Point(x, y));
+          new_tile.Shape.MouseDown += Tile_MouseDown;
+          new_tile.Shape.IsMouseDirectlyOverChanged += Tile_IsMouseDirectlyOverChanged;
+          Tiles.Add(new_tile);
+        }
+      }
+
+      UpdateTileBounds();
+
+      // adding tiles to the canvas board
+      Tiles.ForEach(delegate (Tile tile) {
+        Canvas.SetZIndex(tile.Shape, 0);
+        canvas.Children.Add(tile.Shape);
+      });
+
+      // creating the piece object for Player2 (always the user)
+      bool owner = (lobbyType == LobbyType.User);
+      for (int y = 0; y < 3; y++) {
+        for (int x = 0; x < 8; x++) {
+          if (((x + 1) + y) % 2 == 0) {
+            Piece new_piece = new Piece(new Point(x, y), PlayerType.Player2);
+            new_piece.Shape.MouseDown += Piece_MouseDown;
+            Pieces.Add(new_piece);
+          }
+        }
+      }
+
+      // creating the piece objects for Player1 (always the host)
+      for (int y = 7; y > 4; y--) {
+        for (int x = 7; x >= 0; x--) {
+          if (((x + 1) + y) % 2 == 0) {
+            Piece new_piece = new Piece(new Point(x, y), PlayerType.Player1);
+            new_piece.Shape.MouseDown += Piece_MouseDown;
+            Pieces.Add(new_piece);
+          }
+        }
+      }
+
+      UpdatePieceBounds();
+
+      // placing on the screen
+      Pieces.ForEach(delegate (Piece piece) {
+        Canvas.SetZIndex(piece.Shape, 1);
+        canvas.Children.Add(piece.Shape);
+      });
+
+      canvas.SizeChanged += Canvas_SizeChanged;
+    }
+
+    public void HighlightForcedPiece(Point position) {
+      Piece piece = Pieces.Find(p => p.Position.Equals(position));
+      if (piece != null) {
+        piece.Shape.Stroke = BlueBrush;
+      }
+    }
+
+    public void ResetPieceHighlight(Point position) {
+      Piece piece = Pieces.Find(p => p.Position.Equals(position));
+      if (piece != null) {
+        piece.Shape.Stroke = WhiteBrush;
+      }
+    }
+
+    public void HighlightSelectedPiece(Point position) {
+      Piece piece = Pieces.Find(p => p.Position.Equals(position));
+      if (piece != null) {
+        piece.Shape.Stroke = YellowBrush;
+      }
+    }
+
+    public void ResetTileHighlight(Point spot) {
+      Tile tile = Tiles.Find(t => t.Position.Equals(spot));
+      if (tile != null) {
+        tile.Shape.Stroke = null;
+      }
+    }
+
+    public void HighlightTile(Point spot) {
+      Tile tile = Tiles.Find(t => t.Position.Equals(spot));
+      if (tile != null) {
+        tile.Shape.Stroke = GreenBrush;
+      }
+    }
+
+    public void HighlightHopPiece(Point position) {
+      Piece piece = Pieces.Find(p => p.Position.Equals(position));
+      if (piece != null) {
+        piece.Shape.Stroke = PurpleBrush;
+      }
+    }
+
+    public void MovePiece(Point current, Point landing) {
+      Piece piece = Pieces.Find(p => p.Position.Equals(current));
+      if (piece != null) {
+        piece.Position = landing;
+        UpdatePieceBounds();
+      }
+    }
+
+    public void RemovePiece(Point position) {
+      Piece piece = Pieces.Find(p => p.Position.Equals(position));
+      if (piece != null) {
+        canvas.Children.Remove(piece.Shape);
+        Pieces.Remove(piece);
+      }
+    }
+
+    private void Piece_MouseDown(object sender, MouseButtonEventArgs e) {
+      Piece piece = Pieces.Find(p => p.Shape.Equals((Shape)sender));
+      if (piece.Player == User.Type) {
+        PieceClick?.Invoke(piece.Position);
+      }
+    }
+
+    private void Tile_MouseDown(object sender, MouseButtonEventArgs e) {
+      Tile tile = Tiles.Find(t => t.Shape.Equals((Shape)sender));
+      if (tile != null) {
+        TileClick?.Invoke(tile.Position);
+      }
+    }
+
+    private void Tile_IsMouseDirectlyOverChanged(object sender, DependencyPropertyChangedEventArgs e) {
+      Tile tile = Tiles.Find(t => t.Shape.Equals((Shape)sender));
+      if (tile != null) {
+        TileHoverChange?.Invoke(tile.Position, tile.Shape.IsMouseDirectlyOver);
+      }
+    }
+
+    private void Canvas_SizeChanged(object sender, SizeChangedEventArgs e) {
+      // TODO: force the board to be a square always (take the smallest bounds and use that for both...)
+      UpdateTileBounds();
+      UpdatePieceBounds();
+    }
+
+    private void UpdateTileBounds() {
+      double tileHeight = canvas.ActualHeight / 8;
+      double tileWidth = canvas.ActualWidth / 8;
+
+      Tiles.ForEach(delegate (Tile tile) {
+        tile.Shape.Width = tileWidth;
+        tile.Shape.Height = tileHeight;
+        Canvas.SetTop(tile.Shape, tile.Position.Y * tile.Shape.Height);
+        Canvas.SetLeft(tile.Shape, tile.Position.X * tile.Shape.Width);
+      });
+    }
+
+    private void UpdatePieceBounds() {
+      double tileHeight = canvas.ActualHeight / 8;
+      double tileWidth = canvas.ActualWidth / 8;
+
+      Pieces.ForEach(delegate (Piece piece) {
+        piece.Shape.Width = tileWidth * 0.85;
+        piece.Shape.Height = tileHeight * 0.85;
+
+        double paddingWidth = tileWidth * 0.15;
+        double paddingHeight = tileHeight * 0.15;
+
+        Canvas.SetTop(piece.Shape, (piece.Position.Y * tileHeight) + (paddingHeight / 2));
+        Canvas.SetLeft(piece.Shape, (piece.Position.X * tileWidth) + (paddingWidth / 2));
+      });
     }
   }
 }

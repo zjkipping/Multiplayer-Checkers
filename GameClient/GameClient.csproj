@@ -63,8 +63,11 @@
     </Compile>
     <Compile Include="BaseLobby.cs" />
     <Compile Include="Board.cs" />
+    <Compile Include="BoardObject.cs" />
     <Compile Include="Game.cs" />
     <Compile Include="HostLobby.cs" />
+    <Compile Include="Piece.cs" />
+    <Compile Include="Tile.cs" />
     <Compile Include="User.cs" />
     <Compile Include="UserLobby.cs" />
     <Compile Include="Views\GameView.xaml.cs">
