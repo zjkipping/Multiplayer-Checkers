@@ -93,9 +93,19 @@ namespace GameClient {
     public List<MoveOption> SelectPiece(Point position, PlayerType player) {
       currentOptions = new List<MoveOption>();
       GamePiece piece = pieces.Find(p => p.Position.Equals(position));
-      if (piece != null && piece.Owner == player) {
-        CheckPieceMovement(piece, GetMovement(piece, player), new List<Point>());
-
+      if (piece != null && piece.Owner == player && (forcedPieces.Count == 0 || (forcedPieces.Count > 0 && forcedPieces.Contains(piece)))) {
+        CheckPieceMovement(piece.Owner, piece.Position, GetMovement(piece, player), new List<Point>());
+        if (ForcedMoves) {
+          bool isHop = false;
+          currentOptions.ForEach(delegate (MoveOption option) {
+            if (option.HoppedPieces.Count > 0) {
+              isHop = true;
+            }
+          });
+          if (isHop) {
+            currentOptions.RemoveAll(o => o.HoppedPieces.Count == 0);
+          }
+        }
         // TODO: do something in here that if ForcedMoves is on we need to remove simple moves if there are hopped options
         selectedPiece = piece;
         return currentOptions;
@@ -132,32 +142,43 @@ namespace GameClient {
 
     private void CheckForcedPieces(PlayerType player) {
       forcedPieces = new List<GamePiece>();
-      (from piece in pieces where piece.Owner == player select piece).ToList().ForEach(delegate (GamePiece piece) {
-        GetMovement(piece, player).ForEach(delegate (Point moveSpot) {
+      List<GamePiece> playersPieces = (from piece in pieces where piece.Owner == player select piece).ToList();
+      playersPieces.ForEach(delegate (GamePiece piece) {
+        GetMovement(piece, player).ForEach(delegate (Point move) {
+          Point moveSpot = new Point(piece.Position.X + move.X, piece.Position.Y + move.Y);
           GamePiece hopPiece = pieces.Find(p => p.Position.Equals(moveSpot));
           if (hopPiece != null && hopPiece.Owner != piece.Owner) {
-            GamePiece landingPiece = pieces.Find(p => p.Position.Equals(hopPiece.Position));
-            if (landingPiece == null) {
-              forcedPieces.Add(piece);
+            Point hopSpot = new Point(hopPiece.Position.X + move.X, hopPiece.Position.Y + move.Y);
+            if (ValidMoveSpot(hopSpot)) {
+              GamePiece landingPiece = pieces.Find(p => p.Position.Equals(hopSpot));
+              if (landingPiece == null) {
+                forcedPieces.Add(piece);
+              }
             }
           }
         });
       });
     }
 
-    private void CheckPieceMovement(GamePiece piece, List<Point> movement, List<Point> hoppedPieces) {
+    private void CheckPieceMovement(PlayerType owner, Point position, List<Point> movement, List<Point> hoppedPieces) {
       int hoppedCount = hoppedPieces.Count;
       bool hasHop = false;
       movement.ForEach(delegate (Point move) {
-        Point moveSpot = new Point(piece.Position.X + move.X, piece.Position.Y + move.Y);
+        Point moveSpot = new Point(position.X + move.X, position.Y + move.Y);
         if (ValidMoveSpot(moveSpot)) {
           GamePiece hopPiece = pieces.Find(p => p.Position.Equals(moveSpot));
-          if (hopPiece != null && hopPiece.Owner != piece.Owner) {
-            GamePiece landingPiece = pieces.Find(p => p.Position.Equals(hopPiece.Position));
-            if (landingPiece == null) {
-              hasHop = true;
-              hoppedPieces.Add(hopPiece.Position);
-              CheckPieceMovement(landingPiece, movement, hoppedPieces);
+          if (hopPiece != null && hopPiece.Owner != owner) {
+            Point hopSpot = new Point(hopPiece.Position.X + move.X, hopPiece.Position.Y + move.Y);
+            if (ValidMoveSpot(hopSpot)) {
+              GamePiece landingPiece = pieces.Find(p => p.Position.Equals(hopSpot));
+              if (landingPiece == null) {
+                hasHop = true;
+                List<Point> newHoppedPieces = new List<Point>(hoppedPieces);
+                newHoppedPieces.Add(hopPiece.Position);
+                CheckPieceMovement(owner, hopSpot, movement, newHoppedPieces);
+              }
+            } else if (hasHop) {
+              currentOptions.Add(new MoveOption(position, new List<Point>(hoppedPieces)));
             }
           } else if (hopPiece == null && hoppedCount == 0) {
             currentOptions.Add(new MoveOption(moveSpot, new List<Point>(hoppedPieces)));
@@ -165,7 +186,7 @@ namespace GameClient {
         }
       });
       if (!hasHop && hoppedCount > 0) {
-        currentOptions.Add(new MoveOption(piece.Position, new List<Point>(hoppedPieces)));
+        currentOptions.Add(new MoveOption(position, new List<Point>(hoppedPieces)));
       }
     }
 

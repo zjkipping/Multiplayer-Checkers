@@ -22,7 +22,7 @@ namespace GameClient {
     private SolidColorBrush WhiteBrush = new SolidColorBrush { Color = Color.FromRgb(255, 255, 255) };
     private SolidColorBrush BlueBrush = new SolidColorBrush { Color = Color.FromRgb(0, 0, 255) };
     private SolidColorBrush GreenBrush = new SolidColorBrush { Color = Color.FromRgb(0, 255, 0) };
-    private SolidColorBrush PurpleBrush = new SolidColorBrush { Color = Color.FromRgb(128, 0, 128) };
+    private SolidColorBrush PinkBrush = new SolidColorBrush { Color = Color.FromRgb(255, 0, 255) };
     private SolidColorBrush YellowBrush = new SolidColorBrush { Color = Color.FromRgb(255, 255, 0) };
 
     public delegate void TileClickEventHandler(Point position);
@@ -128,7 +128,7 @@ namespace GameClient {
     public void HighlightHopPiece(Point position) {
       Piece piece = Pieces.Find(p => p.Position.Equals(position));
       if (piece != null) {
-        piece.Shape.Stroke = PurpleBrush;
+        piece.Shape.Stroke = PinkBrush;
       }
     }
 

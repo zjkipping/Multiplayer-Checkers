@@ -51,10 +51,12 @@ namespace GameClient {
             List<GamePiece> forcedPieces = new List<GamePiece>();
             if (turnSections[1] != "") {
               new List<string>(turnSections[1].Split(':')).ForEach(delegate (string piece) {
-                try {
-                  forcedPieces.Add(new GamePiece(Point.Parse(piece), player));
-                } catch (Exception e) {
-                  Console.WriteLine(e);
+                if (piece != "") {
+                  try {
+                    forcedPieces.Add(new GamePiece(Point.Parse(piece), player));
+                  } catch (Exception e) {
+                    Console.WriteLine(e);
+                  }
                 }
               });
             }
@@ -71,11 +73,12 @@ namespace GameClient {
                 if (option != "") {
                   string[] optionParts = option.Split(':');
                   Point spot = Point.Parse(optionParts[0]);
-
                   List<Point> hoppedPieces = new List<Point>();
                   if (optionParts[1] != "") {
                     new List<string>(optionParts[1].Split('~')).ForEach(delegate (string hoppedPiece) {
-                      hoppedPieces.Add(Point.Parse(hoppedPiece));
+                      if (hoppedPiece != "") {
+                        hoppedPieces.Add(Point.Parse(hoppedPiece));
+                      }
                     });
                   }
                   options.Add(new MoveOption(spot, hoppedPieces));
@@ -94,7 +97,9 @@ namespace GameClient {
             List<Point> hoppedPieces = new List<Point>();
             if (optionParts[1] != "") {
               new List<string>(optionParts[1].Split('~')).ForEach(delegate (string hoppedPiece) {
-                hoppedPieces.Add(Point.Parse(hoppedPiece));
+                if (hoppedPiece != "") {
+                  hoppedPieces.Add(Point.Parse(hoppedPiece));
+                }
               });
             }
             TileSelect(new MoveOption(spot, hoppedPieces));

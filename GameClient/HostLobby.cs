@@ -124,14 +124,16 @@ namespace GameClient {
         case "TILE":
           try {
             MoveOption option = game.SelectTile(Point.Parse(parameters));
-            TileSelect(option);
-            string optionsString = "";
-            optionsString += option.Spot.ToString() + ":";
-            option.HoppedPieces.ForEach(delegate (Point piece) {
-              optionsString += piece.ToString() + "~";
-            });
-            SendMessage("TILE_SELECTED|" + optionsString);
-            game.StartNextTurn();
+            if (option != null) {
+              TileSelect(option);
+              string optionsString = "";
+              optionsString += option.Spot.ToString() + ":";
+              option.HoppedPieces.ForEach(delegate (Point piece) {
+                optionsString += piece.ToString() + "~";
+              });
+              SendMessage("TILE_SELECTED|" + optionsString);
+              game.StartNextTurn();
+            }
           } catch (Exception e) {
             Console.WriteLine(e);
           }
