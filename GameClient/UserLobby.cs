@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Windows;
+using System.Windows.Controls;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Sockets;
+using System.Windows.Forms;
 
 using GameClient.Views;
 
@@ -35,6 +37,15 @@ namespace GameClient {
       SendMessage("PIECE|" + position.ToString());
     }
 
+    public void Close() {
+      ListeningToConnection = false;
+      if (connection != null && connection.Connected) {
+        SendMessage("DISCONNECT|");
+        connection.Close();
+      }
+      MiddleManAPI.LeaveLobby();
+    }
+
     private void HandleResponse(string type, string parameters) {
       switch (type) {
         case "MESSAGE":
@@ -42,7 +53,7 @@ namespace GameClient {
           GotNewMessage(sections[0], sections[1]);
           break;
         case "STARTED":
-          Application.Current.Dispatcher?.Invoke(() => ViewController.SetView(new GameView(this)));
+          System.Windows.Application.Current.Dispatcher?.Invoke(() => ViewController.SetView(new GameView(this)));
           break;
         case "TURN":
           string[] turnSections = parameters.Split('-');
@@ -92,17 +103,25 @@ namespace GameClient {
           break;
         case "TILE_SELECTED":
           if (parameters != "") {
-            string[] optionParts = parameters.Split(':');
-            Point spot = Point.Parse(optionParts[0]);
-            List<Point> hoppedPieces = new List<Point>();
-            if (optionParts[1] != "") {
-              new List<string>(optionParts[1].Split('~')).ForEach(delegate (string hoppedPiece) {
-                if (hoppedPiece != "") {
-                  hoppedPieces.Add(Point.Parse(hoppedPiece));
-                }
-              });
+            string[] optionSections = parameters.Split('-');
+            if (int.TryParse(optionSections[0], out int kinged)) {
+              string[] optionParts = optionSections[1].Split(':');
+              Point spot = Point.Parse(optionParts[0]);
+              List<Point> hoppedPieces = new List<Point>();
+              if (optionParts[1] != "") {
+                new List<string>(optionParts[1].Split('~')).ForEach(delegate (string hoppedPiece) {
+                  if (hoppedPiece != "") {
+                    hoppedPieces.Add(Point.Parse(hoppedPiece));
+                  }
+                });
+              }
+              TileSelect((kinged == 1 ? true : false), new MoveOption(spot, hoppedPieces));
             }
-            TileSelect(new MoveOption(spot, hoppedPieces));
+          }
+          break;
+        case "GAME_END":
+          if (int.TryParse(parameters, out int winner)) {
+            StartGameEnd(winner == 1 ? PlayerType.Player1 : PlayerType.Player2);
           }
           break;
       }

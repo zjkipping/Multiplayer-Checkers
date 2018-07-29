@@ -56,16 +56,47 @@ namespace GameClient {
       }
     }
 
+    public static void AttemptReconnect() {
+      int attempts = 0;
+      
+      while (!MiddleManAPI.Connect() && attempts++ < 10) {
+        Close();
+      }
+
+      // raise can't connect to server
+    }
+
+    public static void Close() {
+      ResponseThreadRunning = false;
+      ResponseThread = null;
+      if (socket != null) {
+        socket.Close();
+      }
+    }
+
     public static void RequestLobbyList() {
       SendMessage("REQ_LOBBIES|");
     }
 
     public static void HostLobby() {
+      Console.WriteLine("SENDING HOST MESSAGE");
       SendMessage("HOST|");
     }
 
     public static void JoinLobby(int id) {
       SendMessage("CONNECT|" + id);
+    }
+
+    public static void LeaveLobby() {
+      SendMessage("LEAVE|");
+    }
+
+    public static void CloseLobby() {
+      SendMessage("CLOSE_LOBBY|");
+    }
+
+    public static void UpdateLobbyStatus(LobbyStatus status) {
+      SendMessage("UPDATE_STATUS|" + (status == LobbyStatus.InLobby ? 0 : 1));
     }
 
     private static int getUsablePort() {
@@ -104,6 +135,9 @@ namespace GameClient {
               User.Name = parameters;
               ConnectedSuccess?.Invoke();
               break;
+            case "PING":
+              SendMessage("PONG|");
+              break;
             case "LOBBY_LIST":
               string[] lobbies = parameters.Split(',');
               List<LobbyListItem> lobbyList = new List<LobbyListItem>();
@@ -119,12 +153,17 @@ namespace GameClient {
               LobbyCreated?.Invoke();
               break;
             case "PUNCH-HOST":
+              Console.WriteLine("HOST PUNCHING");
               Socket connectionToC = PerformPunchThrough(sections[1].Split(':'));
               if (connectionToC != null) {
+                SendMessage("PLAYER_CONNECT_SUCCESS|");
                 UserConnected?.Invoke(connectionToC);
+              } else {
+                SendMessage("PLAYER_CONNECT_FAIL|");
               }
               break;
             case "PUNCH-CLIENT":
+              Console.WriteLine("CLIENT PUNCHING");
               Socket connectionToH = PerformPunchThrough(sections[1].Split(':'));
               if (connectionToH != null) {
                 JoinLobbySuccess?.Invoke(connectionToH);
@@ -135,8 +174,7 @@ namespace GameClient {
           }
 
         } else {
-          // raise disconnect events
-          Console.WriteLine("Server Connection Failed...");
+          // AttemptReconnect();
           break;
         }
       }
@@ -153,9 +191,11 @@ namespace GameClient {
 
     private static void SendMessage(string message) {
       try {
-        socket.Send(Encoding.ASCII.GetBytes(message + "\r\n"));
-      } catch (SocketException) {
-        // disconnected from middle man server, do something
+        if (socket != null) {
+          socket.Send(Encoding.ASCII.GetBytes(message + "\r\n"));
+        }
+      } catch (Exception e){
+        Console.WriteLine(e);
       }
     }
 

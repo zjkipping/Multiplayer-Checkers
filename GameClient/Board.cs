@@ -35,6 +35,8 @@ namespace GameClient {
     public event TileHoverChangeEventHandler TileHoverChange;
 
     public Board(Canvas canvas, LobbyType lobbyType) {
+      double length = canvas.ActualHeight > canvas.ActualWidth ? canvas.ActualWidth : canvas.ActualHeight;
+
       this.lobbyType = lobbyType;
       this.canvas = canvas;
 
@@ -48,7 +50,7 @@ namespace GameClient {
         }
       }
 
-      UpdateTileBounds();
+      UpdateTileBounds(length);
 
       // adding tiles to the canvas board
       Tiles.ForEach(delegate (Tile tile) {
@@ -79,7 +81,7 @@ namespace GameClient {
         }
       }
 
-      UpdatePieceBounds();
+      UpdatePieceBounds(length);
 
       // placing on the screen
       Pieces.ForEach(delegate (Piece piece) {
@@ -136,7 +138,17 @@ namespace GameClient {
       Piece piece = Pieces.Find(p => p.Position.Equals(current));
       if (piece != null) {
         piece.Position = landing;
-        UpdatePieceBounds();
+        UpdatePieceBounds(canvas.ActualHeight > canvas.ActualWidth ? canvas.ActualWidth : canvas.ActualHeight);
+      }
+    }
+
+    public void KingPiece(Point position) {
+      Piece piece = Pieces.Find(p => p.Position.Equals(position));
+      if (piece != null) {
+        piece.Type = PieceType.King;
+        piece.ChangeToKing(canvas);
+        piece.Shape.MouseDown += Piece_MouseDown;
+        UpdatePieceBounds(canvas.ActualHeight > canvas.ActualWidth ? canvas.ActualWidth : canvas.ActualHeight);
       }
     }
 
@@ -171,13 +183,14 @@ namespace GameClient {
 
     private void Canvas_SizeChanged(object sender, SizeChangedEventArgs e) {
       // TODO: force the board to be a square always (take the smallest bounds and use that for both...)
-      UpdateTileBounds();
-      UpdatePieceBounds();
+      double length = canvas.ActualHeight > canvas.ActualWidth ? canvas.ActualWidth : canvas.ActualHeight;
+      UpdateTileBounds(length);
+      UpdatePieceBounds(length);
     }
 
-    private void UpdateTileBounds() {
-      double tileHeight = canvas.ActualHeight / 8;
-      double tileWidth = canvas.ActualWidth / 8;
+    private void UpdateTileBounds(double length) {
+      double tileHeight = length / 8;
+      double tileWidth = length / 8;
 
       Tiles.ForEach(delegate (Tile tile) {
         tile.Shape.Width = tileWidth;
@@ -187,16 +200,22 @@ namespace GameClient {
       });
     }
 
-    private void UpdatePieceBounds() {
-      double tileHeight = canvas.ActualHeight / 8;
-      double tileWidth = canvas.ActualWidth / 8;
+    private void UpdatePieceBounds(double length) {
+      double tileHeight = length / 8;
+      double tileWidth = length / 8;
 
       Pieces.ForEach(delegate (Piece piece) {
-        piece.Shape.Width = tileWidth * 0.85;
-        piece.Shape.Height = tileHeight * 0.85;
+        double padding = 0.15;
+        if (piece.Type == PieceType.King) {
+          padding = .25;
+          piece.SetKingPoints(tileWidth * (1 - padding), tileHeight * (1 - padding));
+        } else {
+          piece.Shape.Width = tileWidth * (1 - padding);
+          piece.Shape.Height = tileHeight * (1 - padding);
+        }
 
-        double paddingWidth = tileWidth * 0.15;
-        double paddingHeight = tileHeight * 0.15;
+        double paddingWidth = tileWidth * padding;
+        double paddingHeight = tileHeight * padding;
 
         Canvas.SetTop(piece.Shape, (piece.Position.Y * tileHeight) + (paddingHeight / 2));
         Canvas.SetLeft(piece.Shape, (piece.Position.X * tileWidth) + (paddingWidth / 2));

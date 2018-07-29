@@ -31,79 +31,125 @@ namespace GameClient.Views {
       lobby.NextTurn += Lobby_NextTurn;
       lobby.PieceSelected += Lobby_PieceSelected;
       lobby.TileSelected += Lobby_TileSelected;
+      lobby.GameEnd += Lobby_GameEnd;
+      lobby.PeerDisconnected += Lobby_PeerDisconnected;
+
+      if (lobby.Type == LobbyType.Host) {
+        MiddleManAPI.UpdateLobbyStatus(LobbyStatus.InLobby);
+      }
     }
 
-    private void Lobby_TileSelected(MoveOption option) {
+    private void Lobby_PeerDisconnected() {
+      if (Lobby.Type == LobbyType.User) {
+        (Lobby as UserLobby).Close();
+        Dispatcher?.Invoke(() => ViewController.SetView(new LobbyListView()));
+      } else if (Lobby.Type == LobbyType.Host) {
+        (Lobby as HostLobby).Restart();
+        Dispatcher?.Invoke(() => ViewController.SetView(new LobbyView(Lobby)));
+      }
+    }
+
+    private void Lobby_GameEnd(PlayerType winner) {
+      MessageBoxResult result = System.Windows.MessageBox.Show(winner == User.Type ? "Congratulations You Won!" : "Better Luck Next Time...",
+                                          "Game Ended",
+                                          MessageBoxButton.OK,
+                                          MessageBoxImage.Information);
+      if (result == MessageBoxResult.OK) {
+        Dispatcher?.Invoke(() => {
+          if (Lobby.Type == LobbyType.User) {
+            (Lobby as UserLobby).Close();
+          } else if (Lobby.Type == LobbyType.Host) {
+            (Lobby as HostLobby).Close();
+          }
+          ViewController.SetView(new LobbyListView());
+        });
+      }
+      // display some alert and send user back to lobby list
+    }
+
+    private void Lobby_TileSelected(bool kinged, MoveOption option) {
       Dispatcher?.Invoke(() => {
         // unhighlight everything from current players turn
-        board.ResetPieceHighlight(selectedPiece);
+        try {
+          Console.WriteLine("Got Tile Selected: " + option.Spot+ " - " + option.HoppedPieces.Count);
+          board.ResetPieceHighlight(selectedPiece);
 
-        currentForcedPieces.ForEach(delegate (GamePiece piece) {
-          board.ResetPieceHighlight(piece.Position);
-        });
-
-        currentOptions.ForEach(delegate (MoveOption moveOption) {
-          board.ResetTileHighlight(moveOption.Spot);
-          moveOption.HoppedPieces.ForEach(delegate (Point piece) {
-            board.ResetPieceHighlight(piece);
+          currentForcedPieces.ForEach(delegate (GamePiece piece) {
+            board.ResetPieceHighlight(piece.Position);
           });
-        });
 
-        // move selected piece on board
-        board.MovePiece(selectedPiece, option.Spot);
-        selectedPiece = new Point(-1, -1);
+          currentOptions.ForEach(delegate (MoveOption moveOption) {
+            board.ResetTileHighlight(moveOption.Spot);
+            moveOption.HoppedPieces.ForEach(delegate (Point piece) {
+              board.ResetPieceHighlight(piece);
+            });
+          });
 
-        // remove hopped pieces from board
-        option.HoppedPieces.ForEach(delegate (Point piece) {
-          board.RemovePiece(piece);
-        });
+          // move selected piece on board
+          if (kinged) {
+            board.KingPiece(selectedPiece);
+          }
+          board.MovePiece(selectedPiece, option.Spot);
+          selectedPiece = new Point(-1, -1);
+
+          // remove hopped pieces from board
+          option.HoppedPieces.ForEach(delegate (Point piece) {
+            board.RemovePiece(piece);
+          });
+        } catch(Exception e) {
+          Console.WriteLine(e);
+        }
       });
     }
 
     private void Lobby_PieceSelected(Point piece, List<MoveOption> options) {
       Dispatcher?.Invoke(() => {
-        // Piece Highlighting
+        try {
+          Console.WriteLine("Got Piece Selected: " + piece + " - " + options.Count);
 
-        // reset old selection
-        if (!selectedPiece.Equals(new Point(-1, -1))) {
-          board.ResetPieceHighlight(selectedPiece);
-        }
+          if (!selectedPiece.Equals(new Point(-1, -1))) {
+            board.ResetPieceHighlight(selectedPiece);
+          }
 
-        // reset all forced pieces back to Blue highlight (in case one was already selected)
-        if (currentForcedPieces.Count > 0) {
-          currentForcedPieces.ForEach(delegate (GamePiece forced) {
-            board.HighlightForcedPiece(forced.Position);
+          if (currentForcedPieces.Count > 0) {
+            currentForcedPieces.ForEach(delegate (GamePiece forced) {
+              board.HighlightForcedPiece(forced.Position);
+            });
+          }
+
+          selectedPiece = piece;
+          board.HighlightSelectedPiece(piece);
+
+          currentOptions.ForEach(delegate (MoveOption option) {
+            board.ResetTileHighlight(option.Spot);
           });
+
+          currentOptions = options;
+
+          options.ForEach(delegate (MoveOption option) {
+            board.HighlightTile(option.Spot);
+          });
+        } catch (Exception e) {
+          Console.WriteLine(e);
         }
-
-        selectedPiece = piece;
-        board.HighlightSelectedPiece(piece);
-
-        // Tile Highlighting
-
-        currentOptions.ForEach(delegate (MoveOption option) {
-          board.ResetTileHighlight(option.Spot);
-        });
-
-        currentOptions = options;
-
-        options.ForEach(delegate (MoveOption option) {
-          board.HighlightTile(option.Spot);
-        });
-
       });
     }
 
     private void Lobby_NextTurn(PlayerType player, List<GamePiece> forcedPieces) {
-      Console.WriteLine("Got Next Turn: " + player + " - " + forcedPieces.Count);
       Dispatcher?.Invoke(() => {
-        currentPlayer = player;
-        SetCurrentPlayerText(player);
-        currentForcedPieces = forcedPieces;
+        try {
+          Console.WriteLine("New Turn");
+          Console.WriteLine("Got Next Turn: " + player + " - " + forcedPieces.Count);
+          currentPlayer = player;
+          SetCurrentPlayerText(player);
+          currentForcedPieces = forcedPieces;
 
-        forcedPieces.ForEach(delegate (GamePiece piece) {
-          board.HighlightForcedPiece(piece.Position);
-        });
+          forcedPieces.ForEach(delegate (GamePiece piece) {
+            board.HighlightForcedPiece(piece.Position);
+          });
+        } catch (Exception e) {
+          Console.WriteLine(e);
+        }
       });
     }
 
@@ -162,6 +208,15 @@ namespace GameClient.Views {
         text += Lobby.Player2;
       }
       CurrentPlayerText.Text = text;
+    }
+
+    private void LeaveButton_Click(object sender, RoutedEventArgs e) {
+      if (Lobby.Type == LobbyType.User) {
+        (Lobby as UserLobby).Close();
+      } else if (Lobby.Type == LobbyType.Host) {
+        (Lobby as HostLobby).Close();
+      }
+      Dispatcher?.Invoke(() => ViewController.SetView(new LobbyListView()));
     }
 
     private void ChatButton_Click(object sender, RoutedEventArgs e) {

@@ -16,9 +16,8 @@ namespace GameClient {
     public Game game = null;
 
     public HostLobby(): base(LobbyType.Host) {
-      game = new Game(User.Name);
+      NewGame();
       User.Type = PlayerType.Player1;
-
       MiddleManAPI.UserConnected += (Socket connection) => {
         this.connection = connection;
         ListenThread = new Thread(Listen);
@@ -27,18 +26,28 @@ namespace GameClient {
         GotNewMessage("---New User Connected---");
         StartEnabled.Invoke();
       };
-
       NewResponse += HandleResponse;
+    }
 
-      game.NextTurn += (PlayerType player, List<GamePiece> forcedPieces) => {
-        StartNextTurn(player, forcedPieces);
-        string playerNum = player == PlayerType.Player1 ? "1" : "2";
-        string forcedString = "";
-        forcedPieces.ForEach(delegate (GamePiece piece) {
-          forcedString += piece.Position.X + "," + piece.Position.Y + ":";
-        });
-        SendMessage("TURN|" + playerNum + "-" + forcedString);
-      };
+    private void NewGame() {
+      game = new Game(User.Name);
+      game.NextTurn += Game_NextTurn;
+      game.GameOver += Game_GameOver;
+    }
+
+    private void Game_NextTurn(PlayerType player, List<GamePiece> forcedPieces) {
+      StartNextTurn(player, forcedPieces);
+      string playerNum = player == PlayerType.Player1 ? "1" : "2";
+      string forcedString = "";
+      forcedPieces.ForEach(delegate (GamePiece piece) {
+        forcedString += piece.Position.X + "," + piece.Position.Y + ":";
+      });
+      SendMessage("TURN|" + playerNum + "-" + forcedString);
+    }
+
+    private void Game_GameOver(PlayerType winner) {
+      StartGameEnd(winner);
+      SendMessage("GAME_END|" + (winner == PlayerType.Player1 ? 1 : 2));
     }
 
     public void StartGame() {
@@ -54,13 +63,13 @@ namespace GameClient {
     public void SelectTile(Point position) {
       (bool kinged, MoveOption option) = game.SelectTile(position);
       if (option != null) {
-        TileSelect(option);
+        TileSelect(kinged, option);
         string optionsString = "";
         optionsString += option.Spot.ToString() + ":";
         option.HoppedPieces.ForEach(delegate (Point piece) {
           optionsString += piece.ToString() + "~";
         });
-        SendMessage("TILE_SELECTED|" + optionsString);
+        SendMessage("TILE_SELECTED|" + (kinged ? 1 : 0) + "-" + optionsString);
         game.StartNextTurn();
       } else {
         // invalid tile selection
@@ -89,8 +98,27 @@ namespace GameClient {
       game.SetPlayerReady(PlayerType.Player1);
     }
 
+    public void Restart() {
+      ListeningToConnection = false;
+      if (connection != null && connection.Connected) {
+        connection.Close();
+      }
+      NewGame();
+    }
+
+    public void Close() {
+      ListeningToConnection = false;
+      if (connection != null && connection.Connected) {
+        connection.Close();
+      }
+      MiddleManAPI.CloseLobby();
+    }
+
     private void HandleResponse(string type, string parameters) {
       switch(type) {
+        case "DISCONNECT":
+          PeerDisconnect();
+          break;
         case "MESSAGE":
           string[] parts = parameters.Split('-');
           string message = parts[0];
@@ -101,22 +129,22 @@ namespace GameClient {
         case "NAME":
           game.SetPlayer2Name(parameters);
           break;
-        case "PIECE": // when user selects a piece
+        case "PIECE":
           try {
             Point position = Point.Parse(parameters);
             List<MoveOption> options = game.SelectPiece(position, PlayerType.Player2);
-            PieceSelect(position, options);
-
-            string optionsString = "";
-            options.ForEach(delegate (MoveOption option) {
-              optionsString += option.Spot.ToString() + ":";
-              option.HoppedPieces.ForEach(delegate (Point piece) {
-                optionsString += piece.ToString() + "~";
+            if (options != null) {
+              PieceSelect(position, options);
+              string optionsString = "";
+              options.ForEach(delegate (MoveOption option) {
+                optionsString += option.Spot.ToString() + ":";
+                option.HoppedPieces.ForEach(delegate (Point piece) {
+                  optionsString += piece.ToString() + "~";
+                });
+                optionsString += "#";
               });
-              optionsString += "#";
-            });
-
-            SendMessage("PIECE_SELECTED|" + position.ToString() + "-" + optionsString);
+              SendMessage("PIECE_SELECTED|" + position.ToString() + "-" + optionsString);
+            }
           } catch (Exception e) {
             Console.WriteLine(e);
           }
@@ -125,13 +153,13 @@ namespace GameClient {
           try {
             (bool kinged, MoveOption option) = game.SelectTile(Point.Parse(parameters));
             if (option != null) {
-              TileSelect(option);
+              TileSelect(kinged, option);
               string optionsString = "";
               optionsString += option.Spot.ToString() + ":";
               option.HoppedPieces.ForEach(delegate (Point piece) {
                 optionsString += piece.ToString() + "~";
               });
-              SendMessage("TILE_SELECTED|" + optionsString);
+              SendMessage("TILE_SELECTED|" + (kinged ? 1 : 0) + "-" + optionsString);
               game.StartNextTurn();
             }
           } catch (Exception e) {

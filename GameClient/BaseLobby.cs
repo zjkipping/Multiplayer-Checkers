@@ -12,7 +12,7 @@ namespace GameClient {
   public class BaseLobby {
     public LobbyType Type;
     public Thread ListenThread = null;
-    public Socket connection;
+    public Socket connection = null;
     public ObservableCollection<string> ChatMessages = new ObservableCollection<string>();
     public bool ListeningToConnection = false;
 
@@ -22,11 +22,14 @@ namespace GameClient {
     public delegate void PieceSelectedEventHandler(Point piece, List<MoveOption> options);
     public event PieceSelectedEventHandler PieceSelected;
 
-    public delegate void TileSelectedEventHandler(MoveOption option);
+    public delegate void TileSelectedEventHandler(bool kinged, MoveOption option);
     public event TileSelectedEventHandler TileSelected;
 
     public delegate void NextTurnEventHandler(PlayerType player, List<GamePiece> forcedPieces);
     public event NextTurnEventHandler NextTurn;
+
+    public delegate void GameEndEventHandler(PlayerType winner);
+    public event GameEndEventHandler GameEnd;
 
     public delegate void NewResponseEventHandler(string type, string parameters);
     public event NewResponseEventHandler NewResponse;
@@ -39,6 +42,7 @@ namespace GameClient {
     }
 
     public void GotNewMessage(string message, string user = "") {
+      Console.WriteLine("wtf");
       Application.Current.Dispatcher?.Invoke(() => ChatMessages.Add((user != "" ? user + ": " : "") + message));
     }
 
@@ -46,12 +50,20 @@ namespace GameClient {
       NextTurn?.Invoke(player, forcedPieces);
     }
 
+    public void PeerDisconnect() {
+      PeerDisconnected?.Invoke();
+  }
+
+    public void StartGameEnd(PlayerType winner) {
+      GameEnd?.Invoke(winner);
+    }
+
     public void PieceSelect(Point piece, List<MoveOption> options) {
       PieceSelected?.Invoke(piece, options);
     }
 
-    public void TileSelect(MoveOption option) {
-      TileSelected?.Invoke(option);
+    public void TileSelect(bool kinged, MoveOption option) {
+      TileSelected?.Invoke(kinged, option);
     }
 
     public void SendMessage(string message) {
@@ -59,7 +71,8 @@ namespace GameClient {
         try {
           connection.Send(Encoding.ASCII.GetBytes(message + "\r\n"));
           Console.WriteLine("SENT MESSAGE:   " + message);
-        } catch (SocketException) {
+        } catch (Exception e) {
+          Console.WriteLine(e);
           PeerDisconnected?.Invoke();
         }
       }

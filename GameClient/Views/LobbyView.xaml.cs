@@ -19,12 +19,25 @@ namespace GameClient.Views {
     public BaseLobby lobby;
 
     public LobbyView(BaseLobby lobby) {
+      this.lobby = lobby;
       InitializeComponent();
       ChatListBox.ItemsSource = lobby.ChatMessages;
-      this.lobby = lobby;
 
       if (lobby.Type == LobbyType.Host) {
+        ForceJumpsCheck.IsEnabled = true;
+        ForceJumpsCheck.Visibility = Visibility.Visible;
+        MiddleManAPI.UpdateLobbyStatus(LobbyStatus.InLobby);
         (lobby as HostLobby).StartEnabled += () => Dispatcher?.Invoke(() => { StartButton.IsEnabled = true; StartButton.Visibility = Visibility.Visible; });
+      }
+
+      lobby.PeerDisconnected += Lobby_PeerDisconnected;
+    }
+
+    private void Lobby_PeerDisconnected() {
+      if (lobby.Type == LobbyType.User) {
+        (lobby as UserLobby).Close();
+      } else if (lobby.Type == LobbyType.Host) {
+        (lobby as HostLobby).Restart();
       }
     }
 
@@ -43,6 +56,21 @@ namespace GameClient.Views {
     private void StartButton_Click(object sender, RoutedEventArgs e) {
       if (lobby.Type == LobbyType.Host) {
         (lobby as HostLobby).StartGame();
+      }
+    }
+
+    private void Button_Click(object sender, RoutedEventArgs e) {
+      if (lobby.Type == LobbyType.User) {
+        (lobby as UserLobby).Close();
+      } else if (lobby.Type == LobbyType.Host) {
+        (lobby as HostLobby).Close();
+      }
+      Dispatcher?.Invoke(() => ViewController.SetView(new LobbyListView()));
+    }
+
+    private void ForceJumpsCheck_Changed(object sender, RoutedEventArgs e) {
+      if (lobby.Type == LobbyType.Host) {
+        (lobby as HostLobby).game.ForcedMoves = (bool)(sender as CheckBox).IsChecked;
       }
     }
   }

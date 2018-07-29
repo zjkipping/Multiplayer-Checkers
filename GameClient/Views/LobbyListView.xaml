@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:GameClient.Views"
              mc:Ignorable="d" 
-             d:DesignHeight="620" d:DesignWidth="820">
+             d:DesignHeight="643" d:DesignWidth="820">
     <Grid>
         <TextBlock Margin="10, 0, 0, 0" FontSize="20" VerticalAlignment="Top" HorizontalAlignment="Left">
             Lobby List View

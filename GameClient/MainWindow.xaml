@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:GameClient"
         mc:Ignorable="d"
-        Title="MainWindow" Height="620" Width="820" MinHeight="620" MinWidth="820">
+        Title="MainWindow" Height="643" Width="820" MinHeight="643" MinWidth="820">
     <Grid>
         <ContentControl Name="ViewRenderer"></ContentControl>
     </Grid>

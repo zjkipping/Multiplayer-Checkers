@@ -16,12 +16,15 @@ namespace GameClient {
     public bool Started = false;
     public bool ForcedMoves = true;
 
-    public delegate void NextTurnEventHandler(PlayerType player, List<GamePiece> forcedMoves);
+    public delegate void NextTurnEventHandler(PlayerType player, List<GamePiece> forcedPieces);
     public event NextTurnEventHandler NextTurn;
+
+    public delegate void GameOverEventHandler(PlayerType winner);
+    public event GameOverEventHandler GameOver;
 
     private List<Point> Player1Movement = new List<Point>(new Point[] { new Point(-1, -1), new Point(1, -1) });
     private List<Point> Player2Movement = new List<Point>(new Point[] { new Point(-1, 1), new Point(1, 1) });
-    private List<Point> KingMovement = new List<Point>(new Point[] { new Point(-1, -1), new Point(1, -1), new Point(-1, -1), new Point(1, -1) });
+    private List<Point> KingMovement = new List<Point>(new Point[] { new Point(-1, -1), new Point(1, -1), new Point(-1, 1), new Point(1, 1) });
 
     private List<GamePiece> pieces = new List<GamePiece>();
     private GamePiece selectedPiece = null;
@@ -64,22 +67,24 @@ namespace GameClient {
       }
 
       if (Player1Ready && Player2Ready) {
-        Console.WriteLine("Starting Game!");
         StartNextTurn();
       }
     }
 
     public (bool, MoveOption) SelectTile(Point position) {
-      Console.WriteLine("Selected Tile: " + position.ToString());
       MoveOption option = currentOptions.Find(o => o.Spot.Equals(position));
       if (option != null) {
         if (selectedPiece != null) {
+          bool kinged = (selectedPiece.Owner == PlayerType.Player1 && option.Spot.Y == 0) || (selectedPiece.Owner == PlayerType.Player2 && option.Spot.Y == 7);
           selectedPiece.Position = option.Spot;
+          if (kinged) {
+            selectedPiece.Type = PieceType.King;
+          }
           option.HoppedPieces.ForEach(delegate (Point hoppedPoint) {
             pieces.RemoveAll(p => p.Position.Equals(hoppedPoint));
           });
           selectedPiece = null;
-          return (false, option);
+          return (kinged, option);
         } else {
           // no piece in that spot (probably will never happen)
           return (false, null);
@@ -91,6 +96,7 @@ namespace GameClient {
     }
 
     public List<MoveOption> SelectPiece(Point position, PlayerType player) {
+      List<MoveOption>oldOptions = new List<MoveOption>(currentOptions);
       currentOptions = new List<MoveOption>();
       GamePiece piece = pieces.Find(p => p.Position.Equals(position));
       if (piece != null && piece.Owner == player && (forcedPieces.Count == 0 || (forcedPieces.Count > 0 && forcedPieces.Contains(piece)))) {
@@ -110,24 +116,29 @@ namespace GameClient {
         selectedPiece = piece;
         return currentOptions;
       } else {
+        currentOptions = oldOptions;
         return null;
       }
     }
 
     public void StartNextTurn() {
-      if (!Started) {
-        currentPlayer = PlayerType.Player1;
-        Started = true;
-      } else if (currentPlayer == PlayerType.Player1) {
-        currentPlayer = PlayerType.Player2;
+      (bool over, PlayerType winner) = CheckGameOver();
+      if (!over) {
+        if (!Started) {
+          currentPlayer = PlayerType.Player1;
+          Started = true;
+        } else if (currentPlayer == PlayerType.Player1) {
+          currentPlayer = PlayerType.Player2;
+        } else {
+          currentPlayer = PlayerType.Player1;
+        }
+        if (ForcedMoves) {
+          CheckForcedPieces(currentPlayer);
+        }
+        NextTurn?.Invoke(currentPlayer, forcedPieces);
       } else {
-        currentPlayer = PlayerType.Player1;
+        GameOver?.Invoke(winner);
       }
-      if (ForcedMoves) {
-        CheckForcedPieces(currentPlayer);
-      }
-      Console.WriteLine("Next Turn:  " + currentPlayer);
-      NextTurn?.Invoke(currentPlayer, forcedPieces);
     }
 
     private List<Point> GetMovement(GamePiece piece, PlayerType player) {
@@ -167,7 +178,7 @@ namespace GameClient {
         Point moveSpot = new Point(position.X + move.X, position.Y + move.Y);
         if (ValidMoveSpot(moveSpot)) {
           GamePiece hopPiece = pieces.Find(p => p.Position.Equals(moveSpot));
-          if (hopPiece != null && hopPiece.Owner != owner) {
+          if (hopPiece != null && hopPiece.Owner != owner && !hoppedPieces.Contains(hopPiece.Position)) {
             Point hopSpot = new Point(hopPiece.Position.X + move.X, hopPiece.Position.Y + move.Y);
             if (ValidMoveSpot(hopSpot)) {
               GamePiece landingPiece = pieces.Find(p => p.Position.Equals(hopSpot));
@@ -195,6 +206,18 @@ namespace GameClient {
         return false;
       }
       return true;
+    }
+
+    private (bool, PlayerType) CheckGameOver() {
+      List<GamePiece> player1Pieces = (from piece in pieces where piece.Owner == PlayerType.Player1 select piece).ToList();
+      List<GamePiece> player2Pieces = (from piece in pieces where piece.Owner == PlayerType.Player2 select piece).ToList();
+      if (player1Pieces.Count == 0) {
+        return (true, PlayerType.Player2);
+      } else if (player2Pieces.Count == 0) {
+        return (true, PlayerType.Player1);
+      } else {
+        return (false, PlayerType.Player1);
+      }
     }
   }
 }

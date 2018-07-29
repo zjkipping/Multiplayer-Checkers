@@ -58,7 +58,10 @@ namespace MiddleManServer {
       if (Connection != null) {
         SendMessage("CONNECTED|"+Name);
         Listening = true;
+        LastPing = DateTime.Now;
         ListenThread.Start();
+        //PingingThreadRunning = true;
+        //PingThread.Start();
       }
     }
 
@@ -107,10 +110,17 @@ namespace MiddleManServer {
                 int code = int.Parse(sections[1]);
                 Lobby.SetStatus(code);
                 break;
+              case "PLAYER_CONNECT_SUCCESS":
+                Server.ConnectSuccess(this);
+                break;
+              case "PLAYER_CONNECT_FAIL":
+                Server.ConnectFail(this);
+                break;
             }
           } else if (Type == ClientType.User) {
             switch (responseType) {
               case "HOST":
+                Console.WriteLine("Got Host Response!");
                 Server.HostLobby(this, sections[1]);
                 break;
               case "CONNECT":
@@ -129,31 +139,33 @@ namespace MiddleManServer {
     }
 
     private void HandlePongResponse() {
-      PingingClient = false;
+      Console.WriteLine("CIENT PONGED {0}", IP);
+      LastPing = DateTime.UtcNow;
       if (PingTask != null) {
         PingTask.Abort();
       }
-      LastPing = DateTime.UtcNow;
+      PingingClient = false;
     }
 
     private void Pinging() {
-      while (PingingThreadRunning && LastPing.AddMilliseconds(PingRate) > DateTime.Now) {
-        PingThread = new Thread(() => {
-          Thread.Sleep(PingWait);
-          if (PingingClient) {
-            Disconnect(ClientDisconnectReason.NoPingResponse);
-          }
-        });
-        PingClient();
-        PingingClient = true;
-        PingThread.Start();
+      while (PingingThreadRunning) {
+        if (LastPing.AddMilliseconds(PingRate) < DateTime.Now && !PingingClient) {
+          PingingClient = true;
+          Console.WriteLine("PING CLIENT AT {0}", IP);
+          PingThread = new Thread(() => {
+            PingClient();
+            Thread.Sleep(PingWait);
+            if (PingingClient) {
+              Disconnect(ClientDisconnectReason.NoPingResponse);
+            }
+          });
+          PingThread.Start();
+        }
       }
     }
 
     private void PingClient() {
-      PingingClient = true;
       try {
-        Console.WriteLine("PING CLIENT AT {0}", Connection.RemoteEndPoint);
         Connection.Send(Encoding.ASCII.GetBytes("PING|\r\n"));
       } catch (SocketException) {
         Disconnect(ClientDisconnectReason.SocketTimeout);

@@ -24,7 +24,10 @@ namespace GameClient.Views {
     }
 
     public void ConnectToMiddleMan() {
-      while (!MiddleManAPI.Connect());
+      int attempts = 0;
+      while (!MiddleManAPI.Connect() && attempts++ < 30) {
+        Thread.Sleep(200);
+      }
       MiddleManAPI.ConnectedSuccess += () => Dispatcher?.Invoke(() => ViewController.SetView(new LobbyListView()));
     }
   }

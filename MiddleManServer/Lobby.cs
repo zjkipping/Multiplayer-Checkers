@@ -1,7 +1,10 @@
-﻿namespace MiddleManServer {
+﻿using System;
+
+namespace MiddleManServer {
   public class Lobby {
     public Client Host = null;
     public Client Player = null;
+    public Client ConnectingPlayer = null;
     public int ID;
     public string Name;
     public LobbyStatus Status { get; private set; } = LobbyStatus.InLobby;
@@ -20,9 +23,13 @@
     }
 
     public void Connect(Client client) {
-      Player = client;
-      Player.SendMessage("PUNCH-CLIENT|" + Host.IP.ToString());
-      Host.SendMessage("PUNCH-HOST|" + Player.IP.ToString());
+      try {
+        client.SendMessage("PUNCH-CLIENT|" + Host.IP.ToString());
+        Host.SendMessage("PUNCH-HOST|" + client.IP.ToString());
+        ConnectingPlayer = client;
+      } catch (Exception e) {
+        Console.WriteLine(e);
+      }
     }
 
     public void SetStatus(int code) {

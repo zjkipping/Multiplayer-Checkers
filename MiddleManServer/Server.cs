@@ -58,18 +58,24 @@ namespace MiddleManServer {
     }
 
     public static void HostLobby(Client client, string name) {
-      Lobby new_lobby = new Lobby(client, lobby_counter++, name);
-      new_lobby.LobbyClosed += HandleLobbyClose;
-      Lobbies.Add(new_lobby);
-      client.SetType(ClientType.Host);
-      client.SendMessage("HOSTING|");
-      Console.WriteLine("{0} is now hosting lobby with the id: {1}", client.IP, new_lobby.ID);
+      try {
+        Console.WriteLine("Creating a Lobby");
+        Lobby new_lobby = new Lobby(client, lobby_counter++, name);
+        new_lobby.LobbyClosed += HandleLobbyClose;
+        Lobbies.Add(new_lobby);
+        client.SetType(ClientType.Host);
+        client.Lobby = new_lobby;
+        client.SendMessage("HOSTING|");
+        Console.WriteLine("{0} is now hosting lobby with the id: {1}", client.IP, new_lobby.ID);
+      } catch(Exception e) {
+        Console.WriteLine(e);
+      }
     }
 
     public static void JoinLobby(Client client, int id) {
       Lobby lobby = Lobbies.Find((Lobby l) => l.ID == id);
       if (lobby != null) {
-        if (lobby.PlayerCount < 2) {
+        if (lobby.PlayerCount < 2 && lobby.ConnectingPlayer == null) {
           lobby.Connect(client);
         } else {
           client.SendMessage("ERROR|Lobby Is Full");
@@ -80,13 +86,42 @@ namespace MiddleManServer {
     }
 
     public static void LeaveLobby(Client client) {
-      client.Lobby.Player = null;
-      client.Lobby = null;
+      try {
+        if (client.Lobby != null) {
+          client.Lobby.Player = null;
+          client.Lobby = null;
+        }
+      } catch (Exception e) {
+        Console.WriteLine(e);
+      }
     }
 
     public static void CloseLobby(Client client) {
-      client.Lobby.Close(LobbyCloseReason.Clean);
-      client.Lobby = null;
+      try {
+        Console.WriteLine(client.IP + " closed lobby with the id: " + client.Lobby.ID);
+        client.SetType(ClientType.User);
+        if (client.Lobby != null) {
+          client.Lobby.Close(LobbyCloseReason.Clean);
+          client.Lobby = null;
+        }
+      } catch (Exception e) {
+        Console.WriteLine(e);
+      }
+    }
+
+    public static void ConnectSuccess(Client client) {
+      try {
+        Console.WriteLine(client.Lobby.ConnectingPlayer.IP + " connected successfully to lobby: " + client.Lobby.ID);
+        client.Lobby.Player = client.Lobby.ConnectingPlayer;
+        client.Lobby.ConnectingPlayer = null;
+        client.Lobby.Player.Lobby = client.Lobby;
+      } catch (Exception e) {
+        Console.WriteLine(e);
+      }
+    }
+
+    public static void ConnectFail(Client client) {
+      client.Lobby.ConnectingPlayer = null;
     }
 
     public static int GetClientCount() {
@@ -99,9 +134,12 @@ namespace MiddleManServer {
 
     private static void HandleClientDisconnect(Client sender, ClientDisconnectEventArgs args) {
       Clients.Remove(sender);
-      Lobby hostedLobby = Lobbies.Find((Lobby l) => l.Host == sender);
-      if (hostedLobby != null) {
-        hostedLobby.Close(LobbyCloseReason.HostDisconnect);
+      if (sender.Lobby != null) {
+        if (sender.Type == ClientType.Host) {
+          sender.Lobby.Close(LobbyCloseReason.HostDisconnect);
+        } else {
+          sender.Lobby.Player = null;
+        }
       }
     }
   }
